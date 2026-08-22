@@ -2,8 +2,7 @@ from flask import Flask, render_template_string, request, redirect, url_for, ses
 import re
 import os
 import json
-import mysql.connector
-from mysql.connector import Error
+import sqlite3
 from datetime import datetime
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -18,19 +17,18 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b')
 
 # ----- DATABASE CONFIGURATION -----
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'ai_project'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'Dhanu@143')
-}
+DB_PATH = os.getenv('DB_PATH', os.path.join(os.path.dirname(__file__), 'instance', 'app.db'))
+
+# Ensure instance directory exists
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 # ----- DATABASE CONNECTION -----
 def get_db_connection():
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
         return conn
-    except Error as e:
+    except sqlite3.Error as e:
         print(f"Database connection error: {e}")
         return None
 
@@ -45,10 +43,10 @@ def init_db():
     # Users table (kept for authentication)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            password VARCHAR(255) NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            password TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -59,7 +57,7 @@ def init_db():
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ Database initialized successfully (users table only)")
+    print("[OK] Database initialized successfully (users table only)")
 
 # Initialize database on startup
 init_db()
@@ -2287,8 +2285,8 @@ def login():
         if not email_error and not password_error:
             conn = get_db_connection()
             if conn:
-                cursor = conn.cursor(dictionary=True)
-                cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
                 user = cursor.fetchone()
                 cursor.close()
                 conn.close()
@@ -2300,7 +2298,7 @@ def login():
                         if conn:
                             cursor = conn.cursor()
                             hashed_password = generate_password_hash(password)
-                            cursor.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user['id']))
+                            cursor.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_password, user['id']))
                             conn.commit()
                             cursor.close()
                             conn.close()
@@ -2363,7 +2361,7 @@ def signup():
                 cursor = conn.cursor()
                 try:
                     hashed_password = generate_password_hash(password)
-                    cursor.execute('INSERT INTO users (email, name, password) VALUES (%s, %s, %s)',
+                    cursor.execute('INSERT INTO users (email, name, password) VALUES (?, ?, ?)',
                                  (email, full_name, hashed_password))
                     conn.commit()
                     user_id = cursor.lastrowid
@@ -2372,9 +2370,9 @@ def signup():
                     
                     flash('Account created successfully! Please login with your credentials.', 'success')
                     return redirect(url_for('login'))
-                except mysql.connector.IntegrityError:
+                except sqlite3.IntegrityError:
                     email_error = 'This email is already registered.'
-                except Error as e:
+                except sqlite3.Error as e:
                     flash(f'Database error: {e}', 'error')
             else:
                 flash('Database connection error. Please try again.', 'error')
@@ -2436,8 +2434,8 @@ def api_chat():
 def profile():
     conn = get_db_connection()
     if conn:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute('SELECT id, email, name, created_at FROM users WHERE id = %s', (session['user_id'],))
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, email, name, created_at FROM users WHERE id = ?', (session['user_id'],))
         user = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -2454,11 +2452,11 @@ def change_password():
         
         conn = get_db_connection()
         if conn:
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute('SELECT password FROM users WHERE id = %s', (session['user_id'],))
+            cursor = conn.cursor()
+            cursor.execute('SELECT password FROM users WHERE id = ?', (session['user_id'],))
             user = cursor.fetchone()
             
-            if not user or not check_password_hash(user['password'], current):
+            if not user or not verify_password(user['password'], current):
                 flash('Current password is incorrect.', 'error')
                 return redirect(url_for('change_password'))
             
@@ -2471,7 +2469,7 @@ def change_password():
                 return redirect(url_for('change_password'))
             
             hashed_new = generate_password_hash(new)
-            cursor.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_new, session['user_id']))
+            cursor.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_new, session['user_id']))
             conn.commit()
             cursor.close()
             conn.close()

@@ -1,5 +1,4 @@
 Flask
-mysql-connector-python
 python-dotenv
 sentence-transformers
 qdrant-client
