@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify, flash
+from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify, flash, send_from_directory
 import re
 import os
 import json
@@ -6,10 +6,12 @@ import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+from rag.pipeline import rag_pipeline
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-this-secret-key')
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
@@ -17,10 +19,10 @@ GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b')
 
 # ----- DATABASE CONFIGURATION -----
 DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'ai_project',
-    'user': 'root',
-    'password': 'Dhanu@143'
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'ai_project'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', 'Dhanu@143')
 }
 
 # ----- DATABASE CONNECTION -----
@@ -40,7 +42,7 @@ def init_db():
     
     cursor = conn.cursor()
     
-    # Users table
+    # Users table (kept for authentication)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -51,40 +53,28 @@ def init_db():
         )
     ''')
     
-    # Chat sessions table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS chat_sessions (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    ''')
-    
-    # Chat messages table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS chat_messages (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            session_id INT NOT NULL,
-            user_id INT NOT NULL,
-            role ENUM('user', 'assistant') NOT NULL,
-            content TEXT NOT NULL,
-            sources JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    ''')
+    # Note: chat_sessions and chat_messages tables are NO LONGER used
+    # Chat history is now stored locally in IndexedDB on the user's device
     
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ Database initialized successfully")
+    print("✅ Database initialized successfully (users table only)")
 
 # Initialize database on startup
 init_db()
+
+# ----- PASSWORD HELPER -----
+def verify_password(stored_hash, provided_password):
+    """
+    Verify a password against stored hash.
+    Supports both Werkzeug hashes (scrypt/pbkdf2) and legacy plaintext for migration.
+    """
+    # Werkzeug hashes start with 'scrypt:' or 'pbkdf2:sha256:'
+    if stored_hash.startswith('scrypt:') or stored_hash.startswith('pbkdf2:'):
+        return check_password_hash(stored_hash, provided_password)
+    # Legacy plaintext - verify and return True if match (will be upgraded on next login)
+    return stored_hash == provided_password
 
 # ----- LOGIN REQUIRED DECORATOR -----
 def login_required(f):
@@ -906,6 +896,7 @@ CHAT_HTML = '''
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="{{ url_for('static', filename='js/local-db.js') }}"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1406,7 +1397,9 @@ CHAT_HTML = '''
             </div>
         </div>
     </div>
-    <script>
+    <script type="module">
+        import localDB from '/static/js/local-db.js';
+
         const chatMessages = document.getElementById('chatMessages');
         const emptyState = document.getElementById('emptyState');
         const chatInput = document.getElementById('chatInput');
@@ -1421,6 +1414,9 @@ CHAT_HTML = '''
         const deleteModalOverlay = document.getElementById('deleteModalOverlay');
         const modalCancelBtn = document.getElementById('modalCancelBtn');
         const modalDeleteBtn = document.getElementById('modalDeleteBtn');
+
+        // Get current user ID from session (passed via template)
+        const currentUserId = {{ session.get('user_id', 'anonymous') | tojson }};
 
         let isProcessing = false;
         let currentSessionId = null;
@@ -1442,9 +1438,9 @@ CHAT_HTML = '''
             if (e.target === this) hideDeleteModal();
         });
 
-        modalDeleteBtn.addEventListener('click', function() {
+        modalDeleteBtn.addEventListener('click', async function() {
             if (pendingDeleteId !== null) {
-                performDelete(pendingDeleteId);
+                await performDelete(pendingDeleteId);
                 hideDeleteModal();
             }
         });
@@ -1496,15 +1492,23 @@ CHAT_HTML = '''
         // ---------- LOAD HISTORY ----------
         async function loadHistory() {
             try {
-                const response = await fetch('/api/history');
-                const data = await response.json();
-                renderHistory(data);
-                if (data.length > 0) {
-                    loadSession(data[0].id);
+                const sessions = await localDB.getAllSessions(currentUserId);
+                renderHistory(sessions);
+                if (sessions.length > 0) {
+                    await loadSession(sessions[0].id);
                 }
             } catch (error) {
                 console.error('Error loading history:', error);
+                showHistoryError();
             }
+        }
+
+        function showHistoryError() {
+            historySection.innerHTML = '';
+            const emptyMsg = document.createElement('div');
+            emptyMsg.style.cssText = 'color: #EF4444; font-size: 0.8rem; text-align: center; padding: 1rem 0;';
+            emptyMsg.textContent = 'Unable to load chat history';
+            historySection.appendChild(emptyMsg);
         }
 
         function renderHistory(sessions) {
@@ -1557,15 +1561,14 @@ CHAT_HTML = '''
 
         async function loadSession(sessionId) {
             try {
-                const response = await fetch(`/api/session/${sessionId}`);
-                const data = await response.json();
+                const messages = await localDB.getMessages(sessionId);
                 currentSessionId = sessionId;
                 newChatBtn.dataset.sessionId = sessionId;
                 
                 document.querySelectorAll('.message').forEach(m => m.remove());
                 emptyState.style.display = 'none';
 
-                data.messages.forEach(msg => {
+                messages.forEach(msg => {
                     if (msg.role === 'user') {
                         addUserMessage(msg.content, false);
                     } else {
@@ -1573,12 +1576,12 @@ CHAT_HTML = '''
                     }
                 });
 
-                if (data.messages.length === 0) {
+                if (messages.length === 0) {
                     emptyState.style.display = 'flex';
                 }
 
                 document.querySelectorAll('.chat-item').forEach(el => {
-                    el.classList.toggle('active', parseInt(el.dataset.sessionId) === sessionId);
+                    el.classList.toggle('active', el.dataset.sessionId === sessionId);
                 });
 
                 scrollToBottom();
@@ -1589,14 +1592,14 @@ CHAT_HTML = '''
 
         async function performDelete(sessionId) {
             try {
-                await fetch(`/api/session/${sessionId}`, { method: 'DELETE' });
+                await localDB.deleteSession(sessionId);
                 if (currentSessionId === sessionId) {
                     document.querySelectorAll('.message').forEach(m => m.remove());
                     emptyState.style.display = 'flex';
                     currentSessionId = null;
                     newChatBtn.dataset.sessionId = '';
                 }
-                loadHistory();
+                await loadHistory();
             } catch (error) {
                 console.error('Error deleting session:', error);
             }
@@ -1604,13 +1607,13 @@ CHAT_HTML = '''
 
         async function createNewSession() {
             try {
-                const response = await fetch('/api/session', { method: 'POST' });
-                const data = await response.json();
-                currentSessionId = data.id;
-                newChatBtn.dataset.sessionId = data.id;
+                // Generate title from first message later, or use default
+                const session = await localDB.createSession(currentUserId, 'New Chat');
+                currentSessionId = session.id;
+                newChatBtn.dataset.sessionId = session.id;
                 document.querySelectorAll('.message').forEach(m => m.remove());
                 emptyState.style.display = 'flex';
-                loadHistory();
+                await loadHistory();
                 chatInput.focus();
                 if (window.innerWidth <= 768) toggleSidebar(false);
             } catch (error) {
@@ -1637,16 +1640,26 @@ CHAT_HTML = '''
 
         async function createNewSessionAndSend(text) {
             try {
-                const response = await fetch('/api/session', { method: 'POST' });
-                const data = await response.json();
-                currentSessionId = data.id;
-                newChatBtn.dataset.sessionId = data.id;
-                loadHistory();
+                const session = await localDB.createSession(currentUserId, generateTitle(text));
+                currentSessionId = session.id;
+                newChatBtn.dataset.sessionId = session.id;
+                await loadHistory();
                 addUserMessage(text, true);
+                await localDB.addMessage(currentSessionId, 'user', text, []);
                 requestAIResponse(text, currentSessionId);
             } catch (error) {
                 console.error('Error creating session:', error);
             }
+        }
+
+        function generateTitle(text) {
+            // Generate a short title from the first user message
+            const maxLen = 40;
+            let title = text.trim();
+            if (title.length > maxLen) {
+                title = title.substring(0, maxLen).trim() + '...';
+            }
+            return title || 'New Chat';
         }
 
         sendBtn.addEventListener('click', sendMessage);
@@ -1735,7 +1748,14 @@ CHAT_HTML = '''
                 if (!response.ok) throw new Error(result.error || 'Request failed');
                 removeLoadingMessage();
                 addAIMessage(result.answer, result.sources, true);
-                loadHistory();
+                // Save AI response to IndexedDB
+                await localDB.addMessage(sessionId, 'assistant', result.answer, result.sources || []);
+                // Update session title if it's still "New Chat"
+                const session = await localDB.getSession(sessionId);
+                if (session && session.title === 'New Chat') {
+                    await localDB.updateSession(sessionId, { title: generateTitle(userText) });
+                    await loadHistory();
+                }
             } catch (error) {
                 removeLoadingMessage();
                 addAIMessage(error.message || 'Unable to get a response right now.', []);
@@ -1747,7 +1767,7 @@ CHAT_HTML = '''
         }
 
         // ---------- INIT ----------
-        loadHistory();
+        await loadHistory();
         chatInput.focus();
 
         window.addEventListener('resize', function() {
@@ -2273,7 +2293,18 @@ def login():
                 cursor.close()
                 conn.close()
                 
-                if user and user['password'] == password:
+                if user and verify_password(user['password'], password):
+                    # Upgrade plaintext password to hash if needed
+                    if not (user['password'].startswith('scrypt:') or user['password'].startswith('pbkdf2:')):
+                        conn = get_db_connection()
+                        if conn:
+                            cursor = conn.cursor()
+                            hashed_password = generate_password_hash(password)
+                            cursor.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user['id']))
+                            conn.commit()
+                            cursor.close()
+                            conn.close()
+                    
                     session['user_email'] = email
                     session['user_name'] = user['name']
                     session['user_id'] = user['id']
@@ -2331,8 +2362,9 @@ def signup():
             if conn:
                 cursor = conn.cursor()
                 try:
+                    hashed_password = generate_password_hash(password)
                     cursor.execute('INSERT INTO users (email, name, password) VALUES (%s, %s, %s)',
-                                 (email, full_name, password))
+                                 (email, full_name, hashed_password))
                     conn.commit()
                     user_id = cursor.lastrowid
                     cursor.close()
@@ -2362,80 +2394,13 @@ def chat():
 
 # ----- API ROUTES FOR CHAT HISTORY -----
 
-@app.route('/api/history')
-@login_required
-def api_history():
-    conn = get_db_connection()
-    if conn:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute('''
-            SELECT id, title, created_at 
-            FROM chat_sessions 
-            WHERE user_id = %s 
-            ORDER BY updated_at DESC
-        ''', (session['user_id'],))
-        sessions = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify(sessions)
-    return jsonify([])
-
-@app.route('/api/session/<int:session_id>')
-@login_required
-def api_session(session_id):
-    conn = get_db_connection()
-    if conn:
-        cursor = conn.cursor(dictionary=True)
-        # Verify session belongs to user
-        cursor.execute('SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s', 
-                      (session_id, session['user_id']))
-        if not cursor.fetchone():
-            cursor.close()
-            conn.close()
-            return jsonify({'error': 'Session not found'}), 404
-        
-        cursor.execute('''
-            SELECT role, content, sources 
-            FROM chat_messages 
-            WHERE session_id = %s AND user_id = %s 
-            ORDER BY created_at ASC
-        ''', (session_id, session['user_id']))
-        messages = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify({'messages': messages})
-    return jsonify({'messages': []})
-
-@app.route('/api/session', methods=['POST'])
-@login_required
-def api_create_session():
-    conn = get_db_connection()
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO chat_sessions (user_id, title) 
-            VALUES (%s, %s)
-        ''', (session['user_id'], 'New Chat'))
-        session_id = cursor.lastrowid
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'id': session_id})
-    return jsonify({'error': 'Database error'}), 500
-
-@app.route('/api/session/<int:session_id>', methods=['DELETE'])
-@login_required
-def api_delete_session(session_id):
-    conn = get_db_connection()
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM chat_sessions WHERE id = %s AND user_id = %s', 
-                      (session_id, session['user_id']))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'success': True})
-    return jsonify({'error': 'Database error'}), 500
+# NOTE: Chat history API routes have been removed.
+# Chat history is now stored locally in IndexedDB on the user's device.
+# The following routes are no longer needed:
+# - GET /api/history
+# - GET /api/session/<id>
+# - POST /api/session
+# - DELETE /api/session/<id>
 
 @app.route('/api/chat', methods=['POST'])
 @login_required
@@ -2445,85 +2410,25 @@ def api_chat():
 
     data = request.get_json(silent=True) or {}
     message = str(data.get('message', '')).strip()
-    session_id = data.get('session_id')
+    # session_id is now a local UUID from IndexedDB - we accept it for logging but don't validate against MySQL
+    local_session_id = data.get('session_id')
     
     if not message:
         return jsonify({'error': 'Message is required.'}), 400
 
-    if not session_id:
-        return jsonify({'error': 'Session ID is required.'}), 400
-
-    # Verify session belongs to user
-    conn = get_db_connection()
-    if conn:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute('SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s', 
-                      (session_id, session['user_id']))
-        if not cursor.fetchone():
-            cursor.close()
-            conn.close()
-            return jsonify({'error': 'Invalid session'}), 403
-        cursor.close()
-        conn.close()
-
     try:
-        from urllib.request import Request, urlopen
+        # Run RAG pipeline
+        result = rag_pipeline(message)
+        answer = result['answer']
+        sources = result['sources']
 
-        payload = json.dumps({
-            'model': GROQ_MODEL,
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': 'You are a helpful college assistant. Answer clearly and say when you do not know.'
-                },
-                {'role': 'user', 'content': message}
-            ]
-        }).encode('utf-8')
-        api_request = Request(
-            'https://api.groq.com/openai/v1/chat/completions',
-            data=payload,
-            headers={
-                'Authorization': f'Bearer {GROQ_API_KEY}',
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0'
-            },
-            method='POST'
-        )
-        with urlopen(api_request, timeout=30) as response:
-            result = json.loads(response.read().decode('utf-8'))
-        answer = result['choices'][0]['message']['content']
+        # NOTE: Chat history is now stored locally in IndexedDB on the user's device.
+        # The backend no longer stores chat messages/sessions in MySQL.
+        # The local_session_id is received for correlation/logging only.
 
-        # Save user message and AI response to database
-        conn = get_db_connection()
-        if conn:
-            cursor = conn.cursor()
-            # Save user message
-            cursor.execute('''
-                INSERT INTO chat_messages (session_id, user_id, role, content)
-                VALUES (%s, %s, 'user', %s)
-            ''', (session_id, session['user_id'], message))
-            
-            # Save AI response
-            cursor.execute('''
-                INSERT INTO chat_messages (session_id, user_id, role, content, sources)
-                VALUES (%s, %s, 'assistant', %s, %s)
-            ''', (session_id, session['user_id'], answer, json.dumps([])))
-            
-            # Update session title (use first 50 chars of user message)
-            title = message[:50] + ('...' if len(message) > 50 else '')
-            cursor.execute('''
-                UPDATE chat_sessions 
-                SET title = %s 
-                WHERE id = %s
-            ''', (title, session_id))
-            
-            conn.commit()
-            cursor.close()
-            conn.close()
-
-        return jsonify({'answer': answer, 'sources': []})
+        return jsonify({'answer': answer, 'sources': sources})
     except Exception as error:
-        print(f'AI request error: {error}')
+        print(f'RAG pipeline error: {error}')
         return jsonify({'error': 'The AI service is unavailable right now.'}), 502
 
 @app.route('/profile')
@@ -2553,7 +2458,7 @@ def change_password():
             cursor.execute('SELECT password FROM users WHERE id = %s', (session['user_id'],))
             user = cursor.fetchone()
             
-            if not user or user['password'] != current:
+            if not user or not check_password_hash(user['password'], current):
                 flash('Current password is incorrect.', 'error')
                 return redirect(url_for('change_password'))
             
@@ -2565,7 +2470,8 @@ def change_password():
                 flash('Passwords do not match.', 'error')
                 return redirect(url_for('change_password'))
             
-            cursor.execute('UPDATE users SET password = %s WHERE id = %s', (new, session['user_id']))
+            hashed_new = generate_password_hash(new)
+            cursor.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_new, session['user_id']))
             conn.commit()
             cursor.close()
             conn.close()
