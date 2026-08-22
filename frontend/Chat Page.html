@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>College Assistant · Chat</title>
+    <!-- Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a3a8a;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---------- ANIMATED BLUE BACKGROUND ---------- */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(145deg, #1a3a8a 0%, #2a5fc1 50%, #1e4a9e 100%);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            filter: blur(90px);
+            will-change: transform;
+            animation: floatShape 22s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        .bg-shape:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            top: -15%;
+            left: -10%;
+            background: rgba(255, 255, 255, 0.07);
+            animation-duration: 24s;
+        }
+        .bg-shape:nth-child(2) {
+            width: 700px;
+            height: 700px;
+            bottom: -20%;
+            right: -10%;
+            background: rgba(255, 255, 255, 0.05);
+            animation-duration: 28s;
+            animation-delay: -5s;
+        }
+        .bg-shape:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            top: 30%;
+            left: 55%;
+            background: rgba(255, 255, 255, 0.04);
+            animation-duration: 20s;
+            animation-delay: -9s;
+        }
+        .bg-shape:nth-child(4) {
+            width: 350px;
+            height: 350px;
+            bottom: 15%;
+            left: 10%;
+            background: rgba(255, 255, 255, 0.05);
+            animation-duration: 26s;
+            animation-delay: -3s;
+        }
+
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -30px) scale(1.03); }
+            66% { transform: translate(-30px, 40px) scale(0.97); }
+            100% { transform: translate(20px, -15px) scale(1.02); }
+        }
+
+        .bg-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.04) 0%, transparent 60%);
+            animation: glowShift 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowShift {
+            0% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.02); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+
+        /* ---------- LAYOUT ---------- */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            height: 100vh;
+            max-width: 1440px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0.75rem;
+            gap: 0.75rem;
+        }
+
+        /* ---------- SIDEBAR ---------- */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 20, 60, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.25rem 1rem;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #E2E8F0;
+            margin-bottom: 1.25rem;
+        }
+
+        .sidebar-header .brand-icon {
+            font-size: 1.3rem;
+            color: #4F6EF7;
+        }
+
+        .sidebar-header .brand-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1E293B;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 0.65rem;
+            border-radius: 14px;
+            border: 1.5px dashed #4F6EF7;
+            background: rgba(79, 110, 247, 0.04);
+            color: #4F6EF7;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(79, 110, 247, 0.08);
+            border-color: #4F6EF7;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(79, 110, 247, 0.06);
+        }
+
+        .history-section {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .history-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #94A3B8;
+            margin: 0.75rem 0 0.5rem 0;
+        }
+
+        .chat-item {
+            padding: 0.6rem 0.75rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #1E293B;
+            font-size: 0.85rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .chat-item i {
+            color: #94A3B8;
+            font-size: 0.8rem;
+            width: 18px;
+        }
+
+        .chat-item:hover {
+            background: #F7FAFF;
+        }
+
+        .chat-item.active {
+            background: #EEF4FF;
+            color: #4F6EF7;
+            font-weight: 500;
+        }
+
+        .chat-item.active i {
+            color: #4F6EF7;
+        }
+
+        /* ---------- MAIN CHAT ---------- */
+        .main-chat {
+            flex: 1;
+            background: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 20, 60, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        /* header */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.5rem;
+            border-bottom: 1px solid #E2E8F0;
+            flex-shrink: 0;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chat-header-left .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #1E293B;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .chat-header-left .brand-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1E293B;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .chat-header-left .brand-name i {
+            color: #4F6EF7;
+        }
+
+        .chat-nav {
+            display: flex;
+            gap: 1.5rem;
+            margin-left: 1.5rem;
+        }
+
+        .chat-nav a {
+            font-size: 0.85rem;
+            color: #64748B;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            padding: 0.25rem 0;
+            border-bottom: 2px solid transparent;
+        }
+
+        .chat-nav a:hover {
+            color: #4F6EF7;
+        }
+
+        .chat-nav a.active {
+            color: #4F6EF7;
+            border-bottom-color: #4F6EF7;
+        }
+
+        .chat-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #4F6EF7;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1E293B;
+        }
+
+        /* chat messages area */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* empty state */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .empty-state .icon {
+            font-size: 3.5rem;
+            color: #4F6EF7;
+            background: rgba(79, 110, 247, 0.06);
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 0.25rem;
+        }
+
+        .empty-state p {
+            color: #64748B;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-categories {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-categories span {
+            background: #F7FAFF;
+            padding: 0.35rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #64748B;
+            border: 1px solid #E2E8F0;
+        }
+
+        .suggestion-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            justify-content: center;
+            max-width: 600px;
+        }
+
+        .suggestion-btn {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 40px;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+            color: #1E293B;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+
+        .suggestion-btn:hover {
+            border-color: #4F6EF7;
+            background: #EEF4FF;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(79, 110, 247, 0.06);
+        }
+
+        /* ---------- MESSAGE BUBBLES ---------- */
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .message .msg-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #94A3B8;
+            margin-bottom: 0.2rem;
+            letter-spacing: 0.02em;
+        }
+
+        .message .bubble {
+            padding: 0.85rem 1.2rem;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .message.user .bubble {
+            background: #EEF4FF;
+            color: #1E293B;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .bubble {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            color: #1E293B;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* ---------- SOURCE CITATIONS ⭐ ---------- */
+        .source-section {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: #F7FAFF;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
+            max-width: 100%;
+        }
+
+        .source-section .source-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748B;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0;
+            font-size: 0.8rem;
+            color: #1E293B;
+        }
+
+        .source-item i {
+            color: #4F6EF7;
+            width: 16px;
+            font-size: 0.8rem;
+        }
+
+        .source-item .doc-name {
+            font-weight: 500;
+        }
+
+        .source-item .page-num {
+            color: #64748B;
+            font-size: 0.7rem;
+            background: #E2E8F0;
+            padding: 0.05rem 0.5rem;
+            border-radius: 20px;
+        }
+
+        /* ---------- LOADING ANIMATION ---------- */
+        .loading-dots {
+            display: flex;
+            gap: 0.3rem;
+            padding: 0.5rem 0;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #4F6EF7;
+            border-radius: 50%;
+            animation: dotPulse 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
+        }
+
+        .loading-status {
+            font-size: 0.8rem;
+            color: #64748B;
+            margin-top: 0.2rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---------- CHAT INPUT ---------- */
+        .chat-input-area {
+            padding: 0.75rem 1.5rem 1.25rem;
+            border-top: 1px solid #E2E8F0;
+            flex-shrink: 0;
+            background: #FFFFFF;
+            border-radius: 0 0 24px 24px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            background: #F7FAFF;
+            border-radius: 20px;
+            padding: 0.3rem 0.3rem 0.3rem 1rem;
+            border: 1.5px solid #E2E8F0;
+            transition: border 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #4F6EF7;
+            box-shadow: 0 0 0 4px rgba(79, 110, 247, 0.06), 0 2px 8px rgba(79, 110, 247, 0.02);
+        }
+
+        .input-wrapper textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 0.6rem 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            resize: none;
+            outline: none;
+            color: #1E293B;
+            min-height: 24px;
+            max-height: 120px;
+            line-height: 1.5;
+        }
+
+        .input-wrapper textarea::placeholder {
+            color: #94A3B8;
+        }
+
+        .input-wrapper .send-btn {
+            background: #4F6EF7;
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .input-wrapper .send-btn:hover:not(:disabled) {
+            background: #3b5de7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 110, 247, 0.2);
+        }
+
+        .input-wrapper .send-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 220px;
+                min-width: 220px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 0.5rem;
+                gap: 0.5rem;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100vh;
+                z-index: 100;
+                border-radius: 0 20px 20px 0;
+                transform: translateX(-120%);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+                padding: 1.25rem 1rem;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.3);
+                z-index: 99;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .chat-header-left .menu-toggle {
+                display: block;
+            }
+
+            .chat-nav {
+                display: none;
+            }
+
+            .chat-messages {
+                padding: 1rem;
+            }
+
+            .message {
+                max-width: 92%;
+            }
+
+            .suggestion-grid {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .suggestion-btn {
+                white-space: normal;
+                width: 100%;
+                max-width: 320px;
+                text-align: center;
+            }
+
+            .chat-input-area {
+                padding: 0.5rem 1rem 0.75rem;
+            }
+
+            .user-name {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-header {
+                padding: 0.6rem 1rem;
+            }
+            .chat-messages {
+                padding: 0.75rem;
+            }
+            .empty-state .icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2.5rem;
+            }
+            .empty-state h2 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ANIMATED BLUE BACKGROUND -->
+    <div class="bg-container" aria-hidden="true">
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+    </div>
+
+    <!-- APP -->
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-icon"><i class="fas fa-graduation-cap"></i></span>
+                <span class="brand-name">College Assistant</span>
+            </div>
+            <button class="new-chat-btn" id="newChatBtn">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
+            <div class="history-section">
+                <!-- All history items removed -->
+            </div>
+        </div>
+
+        <!-- OVERLAY (mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- MAIN CHAT -->
+        <div class="main-chat">
+            <!-- header -->
+            <div class="chat-header">
+                <div class="chat-header-left">
+                    <button class="menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="brand-name">
+                        <i class="fas fa-graduation-cap"></i> College Assistant
+                    </div>
+                    <div class="chat-nav">
+                        <a href="#" class="active">Chat</a>
+                    </div>
+                </div>
+                <div class="chat-header-right">
+                    <span class="user-name">Rahul</span>
+                    <div class="user-avatar">R</div>
+                </div>
+            </div>
+
+            <!-- chat messages -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- empty state (visible when no messages) -->
+                <div class="empty-state" id="emptyState">
+                    <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h2>College Assistant</h2>
+                    <p>How can I help you today?<br />Ask questions about your college.</p>
+                    <div class="empty-categories">
+                        <span>Academic Rules</span>
+                        <span>Exams</span>
+                        <span>Attendance</span>
+                        <span>Fees</span>
+                    </div>
+                    <div class="suggestion-grid">
+                        <button class="suggestion-btn" data-question="What is the minimum attendance requirement?">What is the minimum attendance requirement?</button>
+                        <button class="suggestion-btn" data-question="When are the semester exams?">When are the semester exams?</button>
+                        <button class="suggestion-btn" data-question="What are the exam eligibility rules?">What are the exam eligibility rules?</button>
+                        <button class="suggestion-btn" data-question="What is the fee structure?">What is the fee structure?</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- input -->
+            <div class="chat-input-area">
+                <div class="input-wrapper">
+                    <textarea id="chatInput" rows="1" placeholder="Ask anything about your college..."></textarea>
+                    <button class="send-btn" id="sendBtn" aria-label="Send message">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const chatMessages = document.getElementById('chatMessages');
+            const emptyState = document.getElementById('emptyState');
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const newChatBtn = document.getElementById('newChatBtn');
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            let isProcessing = false;
+
+            // ---------- SIDEBAR TOGGLE (mobile) ----------
+            function toggleSidebar(open) {
+                sidebar.classList.toggle('open', open);
+                overlay.classList.toggle('active', open);
+            }
+
+            menuToggle.addEventListener('click', () => toggleSidebar(true));
+            overlay.addEventListener('click', () => toggleSidebar(false));
+
+            // ---------- AUTO-RESIZE TEXTAREA ----------
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // ---------- SEND MESSAGE ----------
+            function sendMessage() {
+                const text = chatInput.value.trim();
+                if (!text || isProcessing) return;
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
+                addUserMessage(text);
+                // hide empty state
+                emptyState.style.display = 'none';
+                // simulate AI response with RAG + sources
+                simulateAIResponse(text);
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // suggestion buttons
+            document.querySelectorAll('.suggestion-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const question = this.dataset.question;
+                    chatInput.value = question;
+                    sendMessage();
+                });
+            });
+
+            // new chat button
+            newChatBtn.addEventListener('click', function() {
+                // clear messages except empty state
+                const msgs = chatMessages.querySelectorAll('.message');
+                msgs.forEach(m => m.remove());
+                emptyState.style.display = 'flex';
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
+                // close sidebar on mobile
+                if (window.innerWidth <= 768) toggleSidebar(false);
+            });
+
+            // ---------- ADD MESSAGE ----------
+            function addUserMessage(text) {
+                const div = document.createElement('div');
+                div.className = 'message user';
+                div.innerHTML = `
+                    <div class="msg-label">You</div>
+                    <div class="bubble">${escapeHtml(text)}</div>
+                `;
+                chatMessages.appendChild(div);
+                scrollToBottom();
+            }
+
+            function addAIMessage(text, sources) {
+                const div = document.createElement('div');
+                div.className = 'message ai';
+                let sourceHtml = '';
+                if (sources && sources.length > 0) {
+                    sourceHtml = `
+                        <div class="source-section">
+                            <div class="source-label"><i class="fas fa-book-open"></i> Sources (${sources.length})</div>
+                            ${sources.map(s => `
+                                <div class="source-item">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span class="doc-name">${escapeHtml(s.doc)}</span>
+                                    <span class="page-num">Page ${s.page}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                div.innerHTML = `
+                    <div class="msg-label">College Assistant</div>
+                    <div class="bubble">${escapeHtml(text)}${sourceHtml}</div>
+                `;
+                chatMessages.appendChild(div);
+                scrollToBottom();
+            }
+
+            function addLoadingMessage() {
+                const div = document.createElement('div');
+                div.className = 'message ai';
+                div.id = 'loadingMessage';
+                div.innerHTML = `
+                    <div class="msg-label">College Assistant</div>
+                    <div class="bubble">
+                        <div class="loading-dots"><span></span><span></span><span></span></div>
+                        <div class="loading-status" id="loadingStatus">Searching college knowledge...</div>
+                    </div>
+                `;
+                chatMessages.appendChild(div);
+                scrollToBottom();
+                return div;
+            }
+
+            function removeLoadingMessage() {
+                const el = document.getElementById('loadingMessage');
+                if (el) el.remove();
+            }
+
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // ---------- ESCAPE HTML ----------
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // ---------- SIMULATE RAG + GROQ ----------
+            function simulateAIResponse(userText) {
+                isProcessing = true;
+                sendBtn.disabled = true;
+
+                const loadingEl = addLoadingMessage();
+                const statusEl = document.getElementById('loadingStatus');
+
+                const statuses = [
+                    { text: 'Searching college knowledge...', delay: 600 },
+                    { text: 'Retrieving relevant information...', delay: 1200 },
+                    { text: 'Generating answer...', delay: 1800 }
+                ];
+
+                let step = 0;
+                const interval = setInterval(() => {
+                    if (step < statuses.length) {
+                        statusEl.textContent = statuses[step].text;
+                        step++;
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 700);
+
+                // Simulate async response
+                setTimeout(() => {
+                    clearInterval(interval);
+                    removeLoadingMessage();
+
+                    // Sample responses with sources
+                    const responses = [
+                        {
+                            text: 'The minimum attendance requirement is 75% according to the college regulations. Students must maintain at least 75% attendance in each course to be eligible for semester exams.',
+                            sources: [
+                                { doc: 'Academic Regulations.pdf', page: 12 },
+                                { doc: 'Attendance Rules.pdf', page: 4 }
+                            ]
+                        },
+                        {
+                            text: 'Semester exams are typically held in December and May. The exact dates are announced 4-6 weeks prior. Please check the academic calendar for specific dates.',
+                            sources: [
+                                { doc: 'Exam Regulations.pdf', page: 8 },
+                                { doc: 'Academic Calendar 2025-26.pdf', page: 2 }
+                            ]
+                        },
+                        {
+                            text: 'To be eligible for semester exams, you must have: 1) Minimum 75% attendance, 2) No pending fees, 3) Completed all course assignments. See the exam regulations for full details.',
+                            sources: [
+                                { doc: 'Exam Regulations.pdf', page: 15 },
+                                { doc: 'Academic Regulations.pdf', page: 22 }
+                            ]
+                        },
+                        {
+                            text: 'The fee structure varies by program. For Engineering: ₹1,50,000/year, B.Sc: ₹80,000/year, MBA: ₹2,20,000/year. Hostel fees are additional. Please see the fee policy for complete breakdown.',
+                            sources: [
+                                { doc: 'Fee Structure 2025-26.pdf', page: 3 },
+                                { doc: 'Hostel Policy.pdf', page: 7 }
+                            ]
+                        },
+                        {
+                            text: 'Based on the college documents, I can help you with academic regulations, attendance requirements, exam schedules, fee structures, and more. What specific information do you need?',
+                            sources: [
+                                { doc: 'Academic Regulations.pdf', page: 1 },
+                                { doc: 'College Handbook.pdf', page: 5 }
+                            ]
+                        }
+                    ];
+
+                    // Pick a response based on keywords
+                    let selected = responses[0];
+                    const lower = userText.toLowerCase();
+                    if (lower.includes('exam') || lower.includes('eligibility')) selected = responses[2];
+                    else if (lower.includes('fee') || lower.includes('cost') || lower.includes('structure')) selected = responses[3];
+                    else if (lower.includes('attendance')) selected = responses[0];
+                    else if (lower.includes('semester') || lower.includes('date')) selected = responses[1];
+                    else selected = responses[4];
+
+                    addAIMessage(selected.text, selected.sources);
+
+                    isProcessing = false;
+                    sendBtn.disabled = false;
+                    chatInput.focus();
+                }, 2800);
+            }
+
+            // ---------- INIT ----------
+            chatInput.focus();
+
+            // Close sidebar on resize to desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    toggleSidebar(false);
+                }
+            });
+
+        })();
+    </script>
+</body>
+</html>

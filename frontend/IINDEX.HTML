@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>College Assistant · Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: #1a3a8a;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ---------- ANIMATED BLUE BACKGROUND ---------- */
+        .bg-container {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: linear-gradient(145deg, #1a3a8a 0%, #2a5fc1 50%, #1e4a9e 100%);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            filter: blur(90px);
+            animation: floatShape 20s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        .bg-shape:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            top: -15%;
+            left: -10%;
+            background: rgba(255, 255, 255, 0.07);
+            animation-duration: 24s;
+        }
+        .bg-shape:nth-child(2) {
+            width: 700px;
+            height: 700px;
+            bottom: -20%;
+            right: -10%;
+            background: rgba(255, 255, 255, 0.05);
+            animation-duration: 28s;
+            animation-delay: -5s;
+        }
+        .bg-shape:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            top: 30%;
+            left: 55%;
+            background: rgba(255, 255, 255, 0.04);
+            animation-duration: 22s;
+            animation-delay: -9s;
+        }
+        .bg-shape:nth-child(4) {
+            width: 350px;
+            height: 350px;
+            bottom: 15%;
+            left: 10%;
+            background: rgba(255, 255, 255, 0.05);
+            animation-duration: 26s;
+            animation-delay: -3s;
+        }
+
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -30px) scale(1.03); }
+            66% { transform: translate(-30px, 40px) scale(0.97); }
+            100% { transform: translate(20px, -15px) scale(1.02); }
+        }
+
+        .bg-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+            animation: glowShift 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowShift {
+            0% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.02); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+
+        /* ---------- HERO CARD ---------- */
+        .hero-card {
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 48px;
+            padding: 3.5rem 3rem 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            animation: cardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cardEntrance {
+            0% { opacity: 0; transform: translateY(30px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ---------- BRAND ---------- */
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand .icon {
+            font-size: 2.2rem;
+            color: #fff;
+            background: rgba(79, 110, 247, 0.25);
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand .name {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+
+        /* ---------- QUOTE - ALL WHITE, NO QUOTE MARKS ---------- */
+        .quote-container {
+            margin-bottom: 2.5rem;
+        }
+
+        .quote-text {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+            letter-spacing: 0.04em;
+            max-width: 550px;
+            margin: 0 auto;
+            text-transform: uppercase;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.08);
+        }
+
+        .quote-text .highlight {
+            color: #ffffff;
+        }
+
+        .quote-sub {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        /* ---------- BUTTONS ---------- */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.9rem 2.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-primary {
+            background: #4F6EF7;
+            color: #fff;
+            box-shadow: 0 8px 28px rgba(79, 110, 247, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #3b5de7;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(79, 110, 247, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.97);
+        }
+
+        .btn i {
+            font-size: 0.9rem;
+        }
+
+        /* ---------- FOOTER ---------- */
+        .footer-text {
+            margin-top: 2.5rem;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 1.5rem;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 768px) {
+            .hero-card {
+                padding: 2.5rem 1.5rem 2rem;
+                border-radius: 32px;
+            }
+            .quote-text {
+                font-size: 2.5rem;
+            }
+            .brand .name {
+                font-size: 1.2rem;
+            }
+            .btn {
+                padding: 0.8rem 1.8rem;
+                font-size: 0.9rem;
+                width: 100%;
+                justify-content: center;
+            }
+            .btn-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn-group .btn {
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-card {
+                padding: 2rem 1.2rem 1.5rem;
+                border-radius: 24px;
+            }
+            .quote-text {
+                font-size: 2rem;
+            }
+            .brand .icon {
+                width: 44px;
+                height: 44px;
+                font-size: 1.6rem;
+            }
+            .brand .name {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ANIMATED BLUE BACKGROUND -->
+    <div class="bg-container" aria-hidden="true">
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+    </div>
+
+    <!-- HERO CARD -->
+    <div class="hero-card">
+        <!-- Brand -->
+        <div class="brand">
+            <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+            <div class="name">College Assistant</div>
+        </div>
+
+        <!-- Quote - All White, No Quote Marks -->
+        <div class="quote-container">
+            <div class="quote-text">
+                ASK <span class="highlight">MY</span> SELF
+            </div>
+            <div class="quote-sub">— Knowledge begins with a question</div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-group">
+            <a href="/login" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+            <a href="/signup" class="btn btn-secondary">
+                <i class="fas fa-rocket"></i> Get Started
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-text">
+            <i class="fas fa-robot" style="margin-right: 0.4rem;"></i> Powered by AI · University Knowledge Base
+        </div>
+    </div>
+
+    <script>
+        // Simple client-side redirect for demonstration
+        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const href = this.getAttribute('href');
+                if (href === '/login') {
+                    alert('Navigating to Login page...');
+                    // window.location.href = '/login';
+                } else if (href === '/signup') {
+                    alert('Navigating to Sign Up page...');
+                    // window.location.href = '/signup';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

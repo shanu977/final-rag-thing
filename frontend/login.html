@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>Login · University AI Assistant</title>
+    <!-- Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: #1a3a8a;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ---------- ANIMATED BLUE BACKGROUND ---------- */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(145deg, #1a3a8a 0%, #2a5fc1 50%, #1e4a9e 100%);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            filter: blur(90px);
+            will-change: transform;
+            animation: floatShape 20s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        .bg-shape:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            top: -15%;
+            left: -10%;
+            background: rgba(255, 255, 255, 0.07);
+            animation-duration: 24s;
+        }
+
+        .bg-shape:nth-child(2) {
+            width: 700px;
+            height: 700px;
+            bottom: -20%;
+            right: -10%;
+            background: rgba(255, 255, 255, 0.05);
+            animation-duration: 28s;
+            animation-delay: -5s;
+        }
+
+        .bg-shape:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            top: 30%;
+            left: 55%;
+            background: rgba(255, 255, 255, 0.04);
+            animation-duration: 22s;
+            animation-delay: -9s;
+        }
+
+        .bg-shape:nth-child(4) {
+            width: 350px;
+            height: 350px;
+            bottom: 15%;
+            left: 10%;
+            background: rgba(255, 255, 255, 0.05);
+            animation-duration: 26s;
+            animation-delay: -3s;
+        }
+
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -30px) scale(1.03); }
+            66% { transform: translate(-30px, 40px) scale(0.97); }
+            100% { transform: translate(20px, -15px) scale(1.02); }
+        }
+
+        .bg-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.04) 0%, transparent 60%);
+            animation: glowShift 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowShift {
+            0% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.02); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+
+        /* ---------- CARD ---------- */
+        .login-card {
+            position: relative;
+            z-index: 1;
+            max-width: 440px;
+            width: 100%;
+            background: #FFFFFF;
+            border-radius: 36px;
+            box-shadow: 0 24px 64px rgba(0, 20, 60, 0.25), 0 8px 24px rgba(0, 0, 0, 0.06);
+            padding: 2.5rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(2px);
+            transition: box-shadow 0.3s ease, transform 0.2s ease;
+            animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cardEntrance {
+            0% { opacity: 0; transform: translateY(24px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .login-card:hover {
+            box-shadow: 0 28px 72px rgba(0, 20, 60, 0.3), 0 8px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        /* brand header */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .brand-icon {
+            font-size: 1.9rem;
+            line-height: 1;
+            color: #4F6EF7;
+            background: rgba(79, 110, 247, 0.08);
+            width: 46px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            transition: background 0.2s;
+        }
+
+        .brand-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            letter-spacing: -0.01em;
+            color: #1E293B;
+            background: linear-gradient(135deg, #1E293B 0%, #2d3a4f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* heading */
+        .form-heading h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: #1E293B;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .form-sub {
+            color: #64748B;
+            font-size: 0.95rem;
+            margin-top: 0.2rem;
+            margin-bottom: 1.8rem;
+            font-weight: 400;
+        }
+
+        /* ---------- INPUTS ---------- */
+        .input-group {
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #1E293B;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.01em;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            background: #FFFFFF;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 18px;
+            transition: border 0.25s ease-in-out, box-shadow 0.25s ease-in-out, background 0.2s;
+            color: #1E293B;
+            outline: none;
+            padding-right: 3rem;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #94A3B8;
+            font-weight: 400;
+            font-size: 0.9rem;
+            transition: color 0.25s ease;
+        }
+
+        .input-wrapper input:focus {
+            border-color: #4F6EF7;
+            box-shadow: 0 0 0 4px rgba(79, 110, 247, 0.08), 0 2px 8px rgba(79, 110, 247, 0.02);
+            background: #FFFFFF;
+        }
+
+        .input-wrapper input:focus::placeholder {
+            color: #6b7a93;
+        }
+
+        .input-group.error .input-wrapper input {
+            border-color: #EF4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.05);
+        }
+
+        .input-group.error .input-wrapper input:focus {
+            border-color: #EF4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.06);
+        }
+
+        .input-group .error-message {
+            font-size: 0.8rem;
+            color: #EF4444;
+            margin-top: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: 450;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .input-group.error .error-message {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .input-group .error-message i {
+            font-size: 0.7rem;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            color: #94A3B8;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, transform 0.15s;
+        }
+
+        .toggle-password:hover {
+            color: #4F6EF7;
+            transform: scale(1.05);
+        }
+
+        .toggle-password:focus-visible {
+            outline: 2px solid #4F6EF7;
+            border-radius: 8px;
+        }
+
+        /* forgot password link */
+        .forgot-link {
+            text-align: right;
+            margin-top: -0.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .forgot-link a {
+            font-size: 0.85rem;
+            color: #64748B;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            border-bottom: 1px solid transparent;
+        }
+
+        .forgot-link a:hover {
+            color: #4F6EF7;
+            border-bottom-color: #4F6EF7;
+        }
+
+        /* ---------- BUTTON ---------- */
+        .btn-primary {
+            width: 100%;
+            background-color: #4F6EF7;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.3s ease, opacity 0.2s;
+            margin-top: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.01em;
+            box-shadow: 0 4px 14px rgba(79, 110, 247, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s, opacity 0.3s;
+            opacity: 0;
+        }
+
+        .btn-primary:active::after {
+            width: 300px;
+            height: 300px;
+            opacity: 1;
+            transition: width 0s, height 0s, opacity 0.1s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #3b5de7;
+            box-shadow: 0 8px 24px rgba(79, 110, 247, 0.30);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            box-shadow: 0 2px 10px rgba(79, 110, 247, 0.08);
+            transform: scale(0.98);
+        }
+
+        .btn-primary .spinner {
+            display: inline-block;
+            width: 1.1rem;
+            height: 1.1rem;
+            border: 2.5px solid rgba(255,255,255,0.25);
+            border-top: 2.5px solid white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* success state (hidden) */
+        .success-message {
+            display: none;
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 24px;
+            padding: 1rem 1.2rem;
+            margin-top: 1rem;
+            color: #15803D;
+            font-weight: 500;
+            align-items: center;
+            gap: 0.6rem;
+            animation: successPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes successPop {
+            0% { opacity: 0; transform: scale(0.94) translateY(6px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .success-message i {
+            font-size: 1.2rem;
+        }
+
+        /* footer */
+        .form-footer {
+            margin-top: 1.8rem;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #64748B;
+        }
+
+        .form-footer a {
+            color: #4F6EF7;
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 1.5px solid transparent;
+            transition: border-color 0.2s, color 0.2s;
+            position: relative;
+        }
+
+        .form-footer a::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 0;
+            height: 2px;
+            background: #4F6EF7;
+            transition: width 0.25s ease;
+        }
+
+        .form-footer a:hover::after {
+            width: 100%;
+        }
+
+        .form-footer a:hover {
+            color: #3b5de7;
+        }
+
+        @media (max-width: 520px) {
+            .login-card {
+                padding: 1.8rem 1.2rem;
+                border-radius: 28px;
+            }
+            .form-heading h1 {
+                font-size: 1.6rem;
+            }
+            .brand-name {
+                font-size: 1rem;
+            }
+            .input-wrapper input {
+                padding: 0.8rem 1rem;
+                padding-right: 3rem;
+                font-size: 0.9rem;
+            }
+            .btn-primary {
+                font-size: 0.95rem;
+                padding: 0.8rem;
+            }
+            .bg-shape:nth-child(1) { width: 350px; height: 350px; }
+            .bg-shape:nth-child(2) { width: 400px; height: 400px; }
+            .bg-shape:nth-child(3) { width: 250px; height: 250px; }
+            .bg-shape:nth-child(4) { width: 200px; height: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ANIMATED BLUE BACKGROUND -->
+    <div class="bg-container" aria-hidden="true">
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+        <div class="bg-shape"></div>
+    </div>
+
+    <!-- LOGIN CARD -->
+    <div class="login-card" id="loginCard">
+        <!-- Brand -->
+        <div class="brand-header">
+            <span class="brand-icon"><i class="fas fa-graduation-cap"></i></span>
+            <span class="brand-name">University AI Assistant</span>
+        </div>
+
+        <!-- Heading -->
+        <div class="form-heading">
+            <h1>Welcome Back</h1>
+            <div class="form-sub">Ask anything about your university.</div>
+        </div>
+
+        <!-- Form -->
+        <form id="loginForm" novalidate>
+            <!-- College Email -->
+            <div class="input-group" id="emailGroup">
+                <label for="email">College Email</label>
+                <div class="input-wrapper">
+                    <input type="email" id="email" placeholder="Enter your college email" autocomplete="email" />
+                </div>
+                <div class="error-message"><i class="fas fa-circle-exclamation"></i> <span id="emailError">Invalid email or password.</span></div>
+            </div>
+
+            <!-- Password -->
+            <div class="input-group" id="passwordGroup">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye" id="passwordIcon"></i>
+                    </button>
+                </div>
+                <div class="error-message"><i class="fas fa-circle-exclamation"></i> <span id="passwordError">Invalid email or password.</span></div>
+            </div>
+
+            <!-- Forgot Password -->
+            <div class="forgot-link">
+                <a href="#" id="forgotLink">Forgot password?</a>
+            </div>
+
+            <!-- Login Button -->
+            <button type="submit" class="btn-primary" id="submitBtn">
+                <span class="btn-text" id="btnText">Login</span>
+                <span id="btnSpinner" style="display: none;" class="spinner"></span>
+            </button>
+
+            <!-- success message -->
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-check-circle"></i> Welcome back! Redirecting to AI Chat…
+            </div>
+        </form>
+
+        <!-- Footer -->
+        <div class="form-footer">
+            Don't have an account? <a href="#" id="signupLink">Sign Up</a>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const form = document.getElementById('loginForm');
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const successMsg = document.getElementById('successMessage');
+
+            const emailGroup = document.getElementById('emailGroup');
+            const passwordGroup = document.getElementById('passwordGroup');
+            const emailError = document.getElementById('emailError');
+            const passwordError = document.getElementById('passwordError');
+
+            const toggleBtn = document.getElementById('togglePassword');
+            const icon = document.getElementById('passwordIcon');
+
+            // ---------- password visibility ----------
+            toggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (password.type === 'password') {
+                    password.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    password.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+
+            // ---------- validation ----------
+            function setError(group, errorSpan, message) {
+                group.classList.add('error');
+                errorSpan.textContent = message;
+            }
+
+            function clearError(group) {
+                group.classList.remove('error');
+            }
+
+            function validateEmail() {
+                const val = email.value.trim();
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (val === '') {
+                    setError(emailGroup, emailError, 'Please enter your college email.');
+                    return false;
+                } else if (!emailPattern.test(val)) {
+                    setError(emailGroup, emailError, 'Please enter a valid college email.');
+                    return false;
+                } else {
+                    clearError(emailGroup);
+                    return true;
+                }
+            }
+
+            function validatePassword() {
+                const val = password.value;
+                if (val === '') {
+                    setError(passwordGroup, passwordError, 'Please enter your password.');
+                    return false;
+                } else {
+                    clearError(passwordGroup);
+                    return true;
+                }
+            }
+
+            function validateAll() {
+                const emailOk = validateEmail();
+                const pwdOk = validatePassword();
+                return emailOk && pwdOk;
+            }
+
+            // blur validation
+            email.addEventListener('blur', validateEmail);
+            password.addEventListener('blur', validatePassword);
+
+            // ---------- submit ----------
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const isValid = validateAll();
+                if (!isValid) {
+                    const firstError = form.querySelector('.input-group.error input');
+                    if (firstError) firstError.focus();
+                    return;
+                }
+
+                // loading state
+                submitBtn.disabled = true;
+                btnText.textContent = 'Logging in...';
+                btnSpinner.style.display = 'inline-block';
+                successMsg.style.display = 'none';
+
+                // simulate async login
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    btnText.textContent = 'Login';
+                    btnSpinner.style.display = 'none';
+
+                    // show success
+                    successMsg.style.display = 'flex';
+
+                    // navigate to AI Chat after delay
+                    setTimeout(() => {
+                        const redirect = confirm('Login successful! (Demo) Redirect to AI Chat?');
+                        if (redirect) {
+                            form.reset();
+                            successMsg.style.display = 'none';
+                            [emailGroup, passwordGroup].forEach(g => clearError(g));
+                            password.type = 'password';
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                            alert('Navigated to AI Chat (simulated)');
+                        } else {
+                            form.reset();
+                            [emailGroup, passwordGroup].forEach(g => clearError(g));
+                            password.type = 'password';
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                            successMsg.style.display = 'none';
+                        }
+                    }, 1400);
+                }, 1800);
+            });
+
+            // ---------- demo links ----------
+            document.getElementById('signupLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('Sign Up page (demo)');
+            });
+
+            document.getElementById('forgotLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('Forgot password (demo)');
+            });
+
+            // clear errors on input
+            email.addEventListener('input', function() { if (email.value.trim() !== '') clearError(emailGroup); });
+            password.addEventListener('input', function() { if (password.value !== '') clearError(passwordGroup); });
+        })();
+    </script>
+</body>
+</html>
